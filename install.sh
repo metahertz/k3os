@@ -221,19 +221,29 @@ EOF
     grub-install ${GRUB_TARGET} --boot-directory=${TARGET}/boot --removable ${DEVICE}
 }
 
+fleetup_preinstall()
+{
+    # Fleetup Netboot/Install Initrd modifications.
+    # Allow for extra pre-install tasks in the Initrd. 
+    # This is only used for the install phase, a regular K3OS initrd will be installed.
+    if [ "$FLEETUP_PREINSTALL_TASKS" = true ] || grep -q 'fleetup.preinstall.tasks=true' /proc/cmdline; then
+        FLEETUP_SCRIPT_TMP="/tmp/fleetup-preinstall.sh"
+        # Get our FLEETUP preinstall script.
+        FLEETUP_PREINSTALL_BASE_URI=$(cat /proc/cmdline | sed -e 's/^.*root=//' -e 's/ .*$//')
+        FLEETUP_FLEETID=$(cat /proc/cmdline | sed -e 's/^.*fleetup.fleetid=//' -e 's/ .*$//')
+        FLEETUP_DEVICEMAC=$(cat /proc/cmdline | sed -e 's/^.*fleetup.devicemac=//' -e 's/ .*$//')
+        FLEETUP_DEVICEIP=$(ip addr show dev eth0 | sed -nr 's/.*inet ([^ ]+).*/\1/p')
+        echo "Getting FleetUp pre-install tasks for ${FLEETUP_DEVICEMAC}"
+        wget ${FLEETUP_PREINSTALL_BASE_URI}/install/customise/${FLEETUP_FLEETID}?mac=${FLEETUP_DEVICEMAC}&ip=${FLEETUP_DEVICEIP} -O ${FLEETUP_SCRIPT_TMP}
+        echo "Running FleetUp pre-install tasks for ${FLEETUP_DEVICEMAC}"
+        chmod +x ${FLEETUP_SCRIPT_TMP}
+        source ${FLEETUP_SCRIPT_TMP}
+    fi
+}
+
 get_iso()
 {
     ISO_DEVICE=$(blkid -L K3OS || true)
-    if [ -z "${ISO_DEVICE}" ]; then
-        for i in $(lsblk -o NAME,TYPE -n | grep -w disk | awk '{print $1}'); do
-            mkdir -p ${DISTRO}
-            if mount -o ro /dev/$i ${DISTRO}; then
-                ISO_DEVICE="/dev/$i"
-                umount ${DISTRO}
-                break
-            fi
-        done
-    fi
 
     if [ -z "${ISO_DEVICE}" ] && [ -n "$K3OS_INSTALL_ISO_URL" ]; then
         TEMP_FILE=$(mktemp k3os.XXXXXXXX.iso)
@@ -356,6 +366,7 @@ validate_device
 
 trap cleanup exit
 
+fleetup_preinstall
 get_iso
 setup_style
 do_format
