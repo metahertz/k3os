@@ -203,16 +203,6 @@ EOF
 get_iso()
 {
     ISO_DEVICE=$(blkid -L K3OS || true)
-    if [ -z "${ISO_DEVICE}" ]; then
-        for i in $(lsblk -o NAME,TYPE -n | grep -w disk | awk '{print $1}'); do
-            mkdir -p ${DISTRO}
-            if mount -o ro /dev/$i ${DISTRO}; then
-                ISO_DEVICE="/dev/$i"
-                umount ${DISTRO}
-                break
-            fi
-        done
-    fi
 
     if [ -z "${ISO_DEVICE}" ] && [ -n "$K3OS_INSTALL_ISO_URL" ]; then
         TEMP_FILE=$(mktemp k3os.XXXXXXXX.iso)
