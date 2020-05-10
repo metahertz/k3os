@@ -229,12 +229,12 @@ fleetup_preinstall()
     if [ "$FLEETUP_PREINSTALL_TASKS" = true ] || grep -q 'fleetup.preinstall.tasks=true' /proc/cmdline; then
         FLEETUP_SCRIPT_TMP="/tmp/fleetup-preinstall.sh"
         # Get our FLEETUP preinstall script.
-        FLEETUP_PREINSTALL_BASE_URI=$(cat /proc/cmdline | sed -e 's/^.*root=//' -e 's/ .*$//')
+        FLEETUP_PREINSTALL_BASE_URI=$(cat /proc/cmdline | sed -e 's/^.*fleetup.preinstall.base_url=//' -e 's/ .*$//')
         FLEETUP_FLEETID=$(cat /proc/cmdline | sed -e 's/^.*fleetup.fleetid=//' -e 's/ .*$//')
         FLEETUP_DEVICEMAC=$(cat /proc/cmdline | sed -e 's/^.*fleetup.devicemac=//' -e 's/ .*$//')
         FLEETUP_DEVICEIP=$(ip addr show dev eth0 | sed -nr 's/.*inet ([^ ]+).*/\1/p')
         echo "Getting FleetUp pre-install tasks for ${FLEETUP_DEVICEMAC}"
-        wget ${FLEETUP_PREINSTALL_BASE_URI}/install/customise/${FLEETUP_FLEETID}?mac=${FLEETUP_DEVICEMAC}&ip=${FLEETUP_DEVICEIP} -O ${FLEETUP_SCRIPT_TMP}
+        curl "${FLEETUP_PREINSTALL_BASE_URI}/${FLEETUP_FLEETID}?mac=${FLEETUP_DEVICEMAC}&ip=${FLEETUP_DEVICEIP}" --output ${FLEETUP_SCRIPT_TMP}
         echo "Running FleetUp pre-install tasks for ${FLEETUP_DEVICEMAC}"
         chmod +x ${FLEETUP_SCRIPT_TMP}
         source ${FLEETUP_SCRIPT_TMP}
